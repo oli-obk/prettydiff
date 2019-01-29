@@ -3,11 +3,11 @@ name = "prettydiff"
 version = "0.1.0"
 authors = ["Roman Koblov <penpen938@me.com>"]
 edition = "2018"
-readme = "README.md"
 description = "Side-by-side diff for two files"
 categories = ["text-processing"]
 keywords = ["diff", "text", "compare", "changes"]
-
+license = "MIT"
+readme = "README.md"
 
 [dependencies]
 prettytable-rs = "0.8.0"
