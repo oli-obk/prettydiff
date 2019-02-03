@@ -6,5 +6,5 @@ pub mod format_table;
 pub mod lcs;
 pub mod text;
 
-pub use basic::diff_slice;
-pub use text::{diff_chars, diff_lines, diff_words};
+pub use crate::basic::diff_slice;
+pub use crate::text::{diff_chars, diff_lines, diff_words};
