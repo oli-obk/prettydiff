@@ -13,6 +13,15 @@ struct Opt {
     /// Right file
     #[structopt(name = "RIGHT", parse(from_os_str))]
     right: PathBuf,
+    /// Don't show lines numbers
+    #[structopt(long = "disable_lines")]
+    disable_lines: bool,
+    /// Show non-changed blocks
+    #[structopt(long = "show_same")]
+    show_same: bool,
+    /// Align new lines inside change block
+    #[structopt(long = "disable_align")]
+    disable_align: bool,
 }
 
 fn read_file(path: &PathBuf) -> std::io::Result<String> {
@@ -26,18 +35,17 @@ fn main() -> std::io::Result<()> {
     let opt = Opt::from_args();
 
     let left_data = read_file(&opt.left)?;
+    let left_name = opt.left.into_os_string().into_string().unwrap();
+
     let right_data = read_file(&opt.right)?;
+    let right_name = opt.right.into_os_string().into_string().unwrap();
 
-    let dopt = prettydiff::DiffOpt {
-        left: left_data,
-        right: right_data,
-
-        left_name: Some(opt.left.into_os_string().into_string().unwrap()),
-        right_name: Some(opt.right.into_os_string().into_string().unwrap()),
-        diff_only: false,
-    };
-
-    prettydiff::diff_text(dopt);
+    prettydiff::diff_lines(&left_data, &right_data)
+        .names(&left_name, &right_name)
+        .set_show_lines(!opt.disable_lines)
+        .set_diff_only(!opt.show_same)
+        .set_aling_new_lines(!opt.disable_align)
+        .prettytable();
 
     Ok(())
 }
