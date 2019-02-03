@@ -23,7 +23,7 @@ println!(
 );
  ```
 
- ![diff_slice](/screens/diff_slice.png?raw=true)
+ ![diff_slice](https://raw.githubusercontent.com/romankoblov/prettydiff/master/screens/diff_slice.png)
 
 Get vector of changes:
 
@@ -44,7 +44,7 @@ assert_eq!(
 
 ### Diff line by chars or words
 
-![diff_chars](/screens/diff_chars.png?raw=true)
+![diff_chars](https://raw.githubusercontent.com/romankoblov/prettydiff/master/screens/diff_chars.png)
 
 ```rust
 use prettydiff::{diff_chars, diff_words};
@@ -90,7 +90,7 @@ println!(
 
 ### Diff lines
 
-![diff_lines](/screens/diff_lines.png?raw=true)
+![diff_lines](https://raw.githubusercontent.com/romankoblov/prettydiff/master/screens/diff_lines.png)
 
 ```rust
 use prettydiff::diff_lines;
@@ -132,4 +132,4 @@ cargo install prettydiff
 prettydiff left_file.txt right_file.txt
 ```
 
-![App](/screens/app.png?raw=true)
+![App](https://raw.githubusercontent.com/romankoblov/prettydiff/master/screens/app.png)
