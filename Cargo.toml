@@ -1,6 +1,6 @@
 [package]
 name = "prettydiff"
-version = "0.2.3"
+version = "0.2.4"
 authors = ["Roman Koblov <penpen938@me.com>"]
 edition = "2018"
 description = "Side-by-side diff for two files"
@@ -8,6 +8,8 @@ categories = ["text-processing"]
 keywords = ["diff", "text", "compare", "changes"]
 license = "MIT"
 readme = "README.md"
+repository = "https://github.com/romankoblov/prettydiff"
+homepage = "https://github.com/romankoblov/prettydiff"
 
 [dependencies]
 prettytable-rs = "0.8.0"
