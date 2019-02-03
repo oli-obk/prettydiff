@@ -1,3 +1,4 @@
+//! Utils for diff text
 use crate::basic;
 use crate::format_table;
 use ansi_term::Colour;
@@ -117,7 +118,7 @@ pub fn split_words(text: &str) -> Vec<&str> {
     result
 }
 
-/// Diff two strings by words (contiguous )
+/// Diff two strings by words (contiguous)
 pub fn diff_words<'a>(old: &'a str, new: &'a str) -> InlineChangeset<'a> {
     InlineChangeset::new(split_words(old), split_words(new))
 }
