@@ -1,7 +1,7 @@
 //! Utils for diff text
 use crate::basic;
 use crate::format_table;
-use ansi_term::Colour;
+use ansi_term::{Colour, Style};
 use prettytable::{Cell, Row};
 use std::fmt;
 
@@ -40,16 +40,16 @@ impl<'a> InlineChangeset<'a> {
         basic::diff(&self.old, &self.new)
     }
 
-    fn color_whitespace(&self, color: Colour, a: &[&str]) -> String {
+    fn color_whitespace(&self, bg_color: Colour, style: Style, a: &[&str]) -> String {
         let mut out = a.join(self.separator);
         if self.highlight_whitespace {
             out = out
                 .chars()
                 .map(|i| {
                     if i.is_whitespace() {
-                        Colour::White.on(color).paint(i.to_string()).to_string()
+                        Colour::White.on(bg_color).paint(i.to_string()).to_string()
                     } else {
-                        i.to_string()
+                        style.paint(i.to_string()).to_string()
                     }
                 })
                 .collect::<Vec<String>>()
@@ -59,16 +59,12 @@ impl<'a> InlineChangeset<'a> {
     }
 
     fn remove_color(&self, a: &[&str]) -> String {
-        Colour::Red
-            .strikethrough()
-            .paint(self.color_whitespace(Colour::Red, a))
-            .to_string()
+        self.color_whitespace(Colour::Red, Colour::Red.strikethrough(), a)
+
     }
 
     fn insert_color(&self, a: &[&str]) -> String {
-        Colour::Green
-            .paint(self.color_whitespace(Colour::Green, a))
-            .to_string()
+        self.color_whitespace(Colour::Green, Colour::Green.normal(), a)
     }
     /// Returns formatted string with colors
     pub fn format(&self) -> String {
@@ -434,4 +430,24 @@ void func3(){}
         .names("left", "right")
         .set_aling_new_lines(true)
         .prettytable();
+
+}
+
+#[test]
+fn test_diff_words_issue_1() {
+    let d1 = diff_words(
+        "und meine Unschuld beweisen!",
+        "und ich werde meine Unschuld beweisen!"
+    );
+    println!("diff_words: {} {:?}", d1, d1.diff());
+    let d2 = diff_words(
+        "Campaignings aus dem Ausland gegen meine Person ausfindig",
+        "Campaignings ausfindig"
+    );
+    println!("diff_words: {} {:?}", d2, d2.diff());
+    let d3 = diff_words(
+        "des kriminellen Videos",
+        "des kriminell erstellten Videos"
+    );
+    println!("diff_words: {} {:?}", d3, d3.diff());
 }
