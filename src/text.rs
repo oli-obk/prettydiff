@@ -6,12 +6,16 @@ use prettytable::{Cell, Row};
 use std::fmt;
 
 /// Container for inline text diff result. Can be pretty-printed by Display trait.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct InlineChangeset<'a> {
     old: Vec<&'a str>,
     new: Vec<&'a str>,
     separator: &'a str,
     highlight_whitespace: bool,
+    insert_style: Style,
+    insert_whitespace_style: Style,
+    remove_style: Style,
+    remove_whitespace_style: Style,
 }
 
 impl<'a> InlineChangeset<'a> {
@@ -21,11 +25,39 @@ impl<'a> InlineChangeset<'a> {
             new,
             separator: "",
             highlight_whitespace: true,
+            insert_style: Colour::Green.normal(),
+            insert_whitespace_style: Colour::White.on(Colour::Green),
+            remove_style: Colour::Red.strikethrough(),
+            remove_whitespace_style: Colour::White.on(Colour::Red),
         }
     }
     /// Highlight whitespaces in case of insert/remove?
     pub fn set_highlight_whitespace(mut self, val: bool) -> Self {
         self.highlight_whitespace = val;
+        self
+    }
+
+    /// Style of inserted text
+    pub fn set_insert_style(mut self, val: Style) -> Self {
+        self.insert_style = val;
+        self
+    }
+
+    /// Style of inserted whitespace
+    pub fn set_insert_whitespace_style(mut self, val: Style) -> Self {
+        self.insert_whitespace_style = val;
+        self
+    }
+
+    /// Style of removed text
+    pub fn set_remove_style(mut self, val: Style) -> Self {
+        self.remove_style = val;
+        self
+    }
+
+    /// Style of removed whitespace
+    pub fn set_remove_whitespace_style(mut self, val: Style) -> Self {
+        self.remove_whitespace_style = val;
         self
     }
 
@@ -40,14 +72,14 @@ impl<'a> InlineChangeset<'a> {
         basic::diff(&self.old, &self.new)
     }
 
-    fn color_whitespace(&self, bg_color: Colour, style: Style, a: &[&str]) -> String {
+    fn color_whitespace(&self, style: Style, whitespace_style: Style, a: &[&str]) -> String {
         let mut out = a.join(self.separator);
         if self.highlight_whitespace {
             out = out
                 .chars()
                 .map(|i| {
                     if i.is_whitespace() {
-                        Colour::White.on(bg_color).paint(i.to_string()).to_string()
+                        whitespace_style.paint(i.to_string()).to_string()
                     } else {
                         style.paint(i.to_string()).to_string()
                     }
@@ -59,12 +91,12 @@ impl<'a> InlineChangeset<'a> {
     }
 
     fn remove_color(&self, a: &[&str]) -> String {
-        self.color_whitespace(Colour::Red, Colour::Red.strikethrough(), a)
+        self.color_whitespace(self.remove_style,  self.remove_whitespace_style, a)
 
     }
 
     fn insert_color(&self, a: &[&str]) -> String {
-        self.color_whitespace(Colour::Green, Colour::Green.normal(), a)
+        self.color_whitespace(self.insert_style,  self.insert_whitespace_style, a)
     }
     /// Returns formatted string with colors
     pub fn format(&self) -> String {
