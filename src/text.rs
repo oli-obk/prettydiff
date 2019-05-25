@@ -43,12 +43,12 @@ where
     }
 }
 
-pub fn collect_strings<'a, T: ToString>(it: impl Iterator<Item = T>) -> Vec<String> {
+pub fn collect_strings<T: ToString>(it: impl Iterator<Item = T>) -> Vec<String> {
     it.map(|s| s.to_string()).collect::<Vec<String>>()
 }
 
 /// Split string by clousure (Fn(char)->bool) keeping delemiters
-pub fn split_by_char_fn<'a, F>(text: &'a str, pat: F) -> StringSplitIter<'a, F>
+pub fn split_by_char_fn<F>(text: &'_ str, pat: F) -> StringSplitIter<'_, F>
 where
     F: Fn(char) -> bool,
 {
@@ -61,7 +61,7 @@ where
 }
 
 /// Split string by non-alphanumeric characters keeping delemiters
-pub fn split_words<'a>(text: &'a str) -> impl Iterator<Item = &str> {
+pub fn split_words(text: &str) -> impl Iterator<Item = &str> {
     split_by_char_fn(text, |c: char| !c.is_alphanumeric())
 }
 
@@ -417,7 +417,7 @@ pub fn diff_lines<'a>(old: &'a str, new: &'a str) -> LineChangeset<'a> {
     LineChangeset::new(old, new)
 }
 
-fn test_splitter_basic(text: &str, exp: &[&str]) {
+fn _test_splitter_basic(text: &str, exp: &[&str]) {
     let res = collect_strings(
         split_by_char_fn(&text, |c: char| c.is_whitespace()).map(|s| s.to_string()),
     );
@@ -426,19 +426,19 @@ fn test_splitter_basic(text: &str, exp: &[&str]) {
 
 #[test]
 fn test_splitter() {
-    test_splitter_basic(
+    _test_splitter_basic(
         "  blah test2 test3  ",
         &[" ", " ", "blah", " ", "test2", " ", "test3", " ", " "],
     );
-    test_splitter_basic(
+    _test_splitter_basic(
         "\tblah test2 test3  ",
         &["\t", "blah", " ", "test2", " ", "test3", " ", " "],
     );
-    test_splitter_basic(
+    _test_splitter_basic(
         "\tblah test2 test3  t",
         &["\t", "blah", " ", "test2", " ", "test3", " ", " ", "t"],
     );
-    test_splitter_basic(
+    _test_splitter_basic(
         "\tblah test2 test3  tt",
         &["\t", "blah", " ", "test2", " ", "test3", " ", " ", "tt"],
     );
@@ -541,7 +541,7 @@ void func3(){}
         .prettytable();
 }
 
-fn test_colors(changeset: &InlineChangeset, exp: &[(Option<Style>, &str)]) {
+fn _test_colors(changeset: &InlineChangeset, exp: &[(Option<Style>, &str)]) {
     let color_s: String = collect_strings(exp.iter().map(|(style_opt, s)| {
         if let Some(style) = style_opt {
             style.paint(s.to_string()).to_string()
@@ -570,7 +570,7 @@ fn test_diff_words_issue_1() {
 
     println!("diff_words: {} {:?}", d1, d1.diff());
 
-    test_colors(
+    _test_colors(
         &d1,
         &[
             (None, "und "),
@@ -581,7 +581,7 @@ fn test_diff_words_issue_1() {
             (None, "meine Unschuld beweisen!"),
         ],
     );
-    test_colors(
+    _test_colors(
         &d1.set_highlight_whitespace(false),
         &[
             (None, "und "),
@@ -594,7 +594,7 @@ fn test_diff_words_issue_1() {
         "Campaignings ausfindig",
     );
     println!("diff_words: {} {:?}", d2, d2.diff());
-    test_colors(
+    _test_colors(
         &d2,
         &[
             (None, "Campaignings "),
@@ -615,7 +615,7 @@ fn test_diff_words_issue_1() {
     );
     let d3 = diff_words("des kriminellen Videos", "des kriminell erstellten Videos");
     println!("diff_words: {} {:?}", d3, d3.diff());
-    test_colors(
+    _test_colors(
         &d3,
         &[
             (None, "des "),
