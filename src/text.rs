@@ -72,13 +72,12 @@ impl<'a> InlineChangeset<'a> {
         basic::diff(&self.old, &self.new)
     }
 
-
     fn apply_style(&self, style: Style, whitespace_style: Style, a: &[&str]) -> String {
         a.join(self.separator)
             .chars()
             .map(|i| {
                 if i.is_whitespace() && self.highlight_whitespace {
-                        whitespace_style.paint(i.to_string()).to_string()
+                    whitespace_style.paint(i.to_string()).to_string()
                 } else {
                     style.paint(i.to_string()).to_string()
                 }
@@ -459,24 +458,20 @@ void func3(){}
         .names("left", "right")
         .set_aling_new_lines(true)
         .prettytable();
-
 }
 
 #[test]
 fn test_diff_words_issue_1() {
     let d1 = diff_words(
         "und meine Unschuld beweisen!",
-        "und ich werde meine Unschuld beweisen!"
+        "und ich werde meine Unschuld beweisen!",
     );
     println!("diff_words: {} {:?}", d1, d1.diff());
     let d2 = diff_words(
         "Campaignings aus dem Ausland gegen meine Person ausfindig",
-        "Campaignings ausfindig"
+        "Campaignings ausfindig",
     );
     println!("diff_words: {} {:?}", d2, d2.diff());
-    let d3 = diff_words(
-        "des kriminellen Videos",
-        "des kriminell erstellten Videos"
-    );
+    let d3 = diff_words("des kriminellen Videos", "des kriminell erstellten Videos");
     println!("diff_words: {} {:?}", d3, d3.diff());
 }
