@@ -40,31 +40,27 @@ impl<'a> InlineChangeset<'a> {
         basic::diff(&self.old, &self.new)
     }
 
-    fn color_whitespace(&self, bg_color: Colour, style: Style, a: &[&str]) -> String {
-        let mut out = a.join(self.separator);
-        if self.highlight_whitespace {
-            out = out
-                .chars()
-                .map(|i| {
-                    if i.is_whitespace() {
-                        Colour::White.on(bg_color).paint(i.to_string()).to_string()
-                    } else {
-                        style.paint(i.to_string()).to_string()
-                    }
-                })
-                .collect::<Vec<String>>()
-                .join("");
-        }
-        out
+    fn apply_style(&self, bg_color: Colour, style: Style, a: &[&str]) -> String {
+        a.join(self.separator)
+            .chars()
+            .map(|i| {
+                if i.is_whitespace() && self.highlight_whitespace {
+                    Colour::White.on(bg_color).paint(i.to_string()).to_string()
+                } else {
+                    style.paint(i.to_string()).to_string()
+                }
+            })
+            .collect::<Vec<String>>()
+            .join("")
     }
 
     fn remove_color(&self, a: &[&str]) -> String {
-        self.color_whitespace(Colour::Red, Colour::Red.strikethrough(), a)
+        self.apply_style(Colour::Red, Colour::Red.strikethrough(), a)
 
     }
 
     fn insert_color(&self, a: &[&str]) -> String {
-        self.color_whitespace(Colour::Green, Colour::Green.normal(), a)
+        self.apply_style(Colour::Green, Colour::Green.normal(), a)
     }
     /// Returns formatted string with colors
     pub fn format(&self) -> String {
