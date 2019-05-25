@@ -20,7 +20,7 @@ where
     F: Fn(char) -> bool,
 {
     type Item = &'a str;
-    fn next(&mut self) -> Option<&'a str> {
+    fn next(&mut self) -> Option<Self::Item> {
         if let Some(m) = self.matched {
             self.matched = None;
             Some(m)

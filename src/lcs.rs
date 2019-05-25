@@ -126,7 +126,7 @@ struct TableIter<'a, T: 'a> {
 
 impl<'a, T> Iterator for TableIter<'a, T> {
     type Item = (usize, usize);
-    fn next(&mut self) -> Option<(usize, usize)> {
+    fn next(&mut self) -> Option<Self::Item> {
         let table = &self.table.table;
 
         while self.x != 0 && self.y != 0 {
