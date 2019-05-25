@@ -103,13 +103,13 @@ where
         table.set_titles(Row::new(
             header.into_iter().map(|i| Cell::new(&i)).collect(),
         ));
-        for j in 0..self.y.len() + 1 {
+        for j in 0..=self.y.len() {
             let mut row = vec![if j == 0 {
                 "Ø".to_string()
             } else {
                 format!("{}", self.y[j - 1])
             }];
-            for i in 0..self.x.len() + 1 {
+            for i in 0..=self.x.len() {
                 row.push(format!("{}", self.table[i][j]));
             }
             table.add_row(row.into_iter().map(|i| Cell::new(&i)).collect());

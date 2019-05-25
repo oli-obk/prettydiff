@@ -72,31 +72,27 @@ impl<'a> InlineChangeset<'a> {
         basic::diff(&self.old, &self.new)
     }
 
-    fn color_whitespace(&self, style: Style, whitespace_style: Style, a: &[&str]) -> String {
-        let mut out = a.join(self.separator);
-        if self.highlight_whitespace {
-            out = out
-                .chars()
-                .map(|i| {
-                    if i.is_whitespace() {
+
+    fn apply_style(&self, style: Style, whitespace_style: Style, a: &[&str]) -> String {
+        a.join(self.separator)
+            .chars()
+            .map(|i| {
+                if i.is_whitespace() && self.highlight_whitespace {
                         whitespace_style.paint(i.to_string()).to_string()
-                    } else {
-                        style.paint(i.to_string()).to_string()
-                    }
-                })
-                .collect::<Vec<String>>()
-                .join("");
-        }
-        out
+                } else {
+                    style.paint(i.to_string()).to_string()
+                }
+            })
+            .collect::<Vec<String>>()
+            .join("")
     }
 
     fn remove_color(&self, a: &[&str]) -> String {
-        self.color_whitespace(self.remove_style,  self.remove_whitespace_style, a)
-
+        self.apply_style(self.remove_style, self.remove_whitespace_style, a)
     }
 
     fn insert_color(&self, a: &[&str]) -> String {
-        self.color_whitespace(self.insert_style,  self.insert_whitespace_style, a)
+        self.apply_style(self.insert_style, self.insert_whitespace_style, a)
     }
     /// Returns formatted string with colors
     pub fn format(&self) -> String {
@@ -152,7 +148,7 @@ pub fn diff_words<'a>(old: &'a str, new: &'a str) -> InlineChangeset<'a> {
 }
 
 fn color_multilines(color: Colour, s: &str) -> String {
-    s.split("\n")
+    s.split('\n')
         .map(|i| color.paint(i).to_string())
         .collect::<Vec<_>>()
         .join("\n")
@@ -218,31 +214,32 @@ impl<'a> LineChangeset<'a> {
         let mut start = 0;
         let mut stop = a.len();
         if self.trim_new_lines {
-            for i in start..stop {
-                if a[i] != "" {
+            for (index, element) in a.iter().enumerate() {
+                if *element != "" {
                     break;
                 }
-                start = i + 1;
+                start = index + 1;
             }
-            for i in (start..stop).rev() {
-                if a[i] != "" {
+            for (index, element) in a[start..stop].iter().rev().enumerate() {
+                if *element != "" {
                     break;
                 }
-                stop = i;
+                stop = index;
             }
         }
         let out = &a[start..stop];
         if let Some(color) = color {
-            return (
+            (
                 out.iter()
                     .map(|i| color.paint(*i).to_string())
                     .collect::<Vec<String>>()
                     .join("\n")
                     .replace("\t", "    "),
                 start,
-            );
+            )
+        } else {
+            (out.join("\n").replace("\t", "    "), start)
         }
-        (out.join("\n").replace("\t", "    "), start)
     }
     fn prettytable_process_replace(
         &self,
