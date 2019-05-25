@@ -5,6 +5,66 @@ use ansi_term::{Colour, Style};
 use prettytable::{Cell, Row};
 use std::fmt;
 
+pub struct StringSplitIter<'a, F>
+where
+    F: Fn(char) -> bool,
+{
+    last: usize,
+    text: &'a str,
+    matched: Option<&'a str>,
+    iter: std::str::MatchIndices<'a, F>,
+}
+
+impl<'a, F> Iterator for StringSplitIter<'a, F>
+where
+    F: Fn(char) -> bool,
+{
+    type Item = &'a str;
+    fn next(&mut self) -> Option<&'a str> {
+        if let Some(m) = self.matched {
+            self.matched = None;
+            Some(m)
+        } else if let Some((idx, matched)) = self.iter.next() {
+            let res = if self.last != idx {
+                self.matched = Some(matched);
+                &self.text[self.last..idx]
+            } else {
+                matched
+            };
+            self.last = idx + matched.len();
+            Some(res)
+        } else if self.last < self.text.len() {
+            let res = &self.text[self.last..];
+            self.last = self.text.len();
+            Some(res)
+        } else {
+            None
+        }
+    }
+}
+
+pub fn collect_strings<'a, T: ToString>(it: impl Iterator<Item = T>) -> Vec<String> {
+    it.map(|s| s.to_string()).collect::<Vec<String>>()
+}
+
+/// Split string by clousure (Fn(char)->bool) keeping delemiters
+pub fn split_by_char_fn<'a, F>(text: &'a str, pat: F) -> StringSplitIter<'a, F>
+where
+    F: Fn(char) -> bool,
+{
+    StringSplitIter {
+        last: 0,
+        text,
+        matched: None,
+        iter: text.match_indices(pat),
+    }
+}
+
+/// Split string by non-alphanumeric characters keeping delemiters
+pub fn split_words<'a>(text: &'a str) -> impl Iterator<Item = &str> {
+    split_by_char_fn(text, |c: char| !c.is_alphanumeric())
+}
+
 /// Container for inline text diff result. Can be pretty-printed by Display trait.
 #[derive(Debug, PartialEq)]
 pub struct InlineChangeset<'a> {
@@ -73,18 +133,24 @@ impl<'a> InlineChangeset<'a> {
     }
 
     fn apply_style(&self, style: Style, whitespace_style: Style, a: &[&str]) -> String {
-        a.join(self.separator)
-            .chars()
-            .map(|i| {
-                let style = if i.is_whitespace() && self.highlight_whitespace {
+        let s = a.join(self.separator);
+        if self.highlight_whitespace {
+            collect_strings(split_by_char_fn(&s, |c| c.is_whitespace()).map(|s| {
+                let style = if s
+                    .chars()
+                    .next()
+                    .map_or_else(|| false, |c| c.is_whitespace())
+                {
                     whitespace_style
                 } else {
                     style
                 };
-                style.paint(i.to_string()).to_string()
-            })
-            .collect::<Vec<String>>()
+                style.paint(s)
+            }))
             .join("")
+        } else {
+            style.paint(s).to_string()
+        }
     }
 
     fn remove_color(&self, a: &[&str]) -> String {
@@ -125,33 +191,14 @@ pub fn diff_chars<'a>(old: &'a str, new: &'a str) -> InlineChangeset<'a> {
 
     InlineChangeset::new(old, new)
 }
-/// Split string by non-alphanumeric characters keeping delemiters
-pub fn split_words(text: &str) -> Vec<&str> {
-    let mut result = Vec::new();
-    let mut last = 0;
-    for (idx, matched) in text.match_indices(|c: char| !c.is_alphanumeric()) {
-        if last != idx {
-            result.push(&text[last..idx]);
-        }
-        result.push(matched);
-        last = idx + matched.len();
-    }
-    if last < text.len() {
-        result.push(&text[last..]);
-    }
-    result
-}
 
 /// Diff two strings by words (contiguous)
 pub fn diff_words<'a>(old: &'a str, new: &'a str) -> InlineChangeset<'a> {
-    InlineChangeset::new(split_words(old), split_words(new))
+    InlineChangeset::new(split_words(old).collect(), split_words(new).collect())
 }
 
 fn color_multilines(color: Colour, s: &str) -> String {
-    s.split('\n')
-        .map(|i| color.paint(i).to_string())
-        .collect::<Vec<_>>()
-        .join("\n")
+    collect_strings(s.split('\n').map(|i| color.paint(i))).join("\n")
 }
 
 /// Container for line-by-line text diff result. Can be pretty-printed by Display trait.
@@ -230,9 +277,7 @@ impl<'a> LineChangeset<'a> {
         let out = &a[start..stop];
         if let Some(color) = color {
             (
-                out.iter()
-                    .map(|i| color.paint(*i).to_string())
-                    .collect::<Vec<String>>()
+                collect_strings(out.iter().map(|i| color.paint(*i).to_string()))
                     .join("\n")
                     .replace("\t", "    "),
                 start,
@@ -372,6 +417,33 @@ pub fn diff_lines<'a>(old: &'a str, new: &'a str) -> LineChangeset<'a> {
     LineChangeset::new(old, new)
 }
 
+fn test_splitter_basic(text: &str, exp: &[&str]) {
+    let res = collect_strings(
+        split_by_char_fn(&text, |c: char| c.is_whitespace()).map(|s| s.to_string()),
+    );
+    assert_eq!(res, exp)
+}
+
+#[test]
+fn test_splitter() {
+    test_splitter_basic(
+        "  blah test2 test3  ",
+        &[" ", " ", "blah", " ", "test2", " ", "test3", " ", " "],
+    );
+    test_splitter_basic(
+        "\tblah test2 test3  ",
+        &["\t", "blah", " ", "test2", " ", "test3", " ", " "],
+    );
+    test_splitter_basic(
+        "\tblah test2 test3  t",
+        &["\t", "blah", " ", "test2", " ", "test3", " ", " ", "t"],
+    );
+    test_splitter_basic(
+        "\tblah test2 test3  tt",
+        &["\t", "blah", " ", "test2", " ", "test3", " ", " ", "tt"],
+    );
+}
+
 #[test]
 fn test_basic() {
     println!("diff_chars: {}", diff_chars("abefcd", "zadqwc"));
@@ -415,10 +487,18 @@ fn test_basic() {
 
 #[test]
 fn test_split_words() {
-    assert_eq!(split_words("Hello World"), ["Hello", " ", "World"]);
-    assert_eq!(split_words("Hello😋World"), ["Hello", "😋", "World"]);
     assert_eq!(
-        split_words("The red brown fox\tjumped, over the rolling log"),
+        collect_strings(split_words("Hello World")),
+        ["Hello", " ", "World"]
+    );
+    assert_eq!(
+        collect_strings(split_words("Hello😋World")),
+        ["Hello", "😋", "World"]
+    );
+    assert_eq!(
+        collect_strings(split_words(
+            "The red brown fox\tjumped, over the rolling log"
+        )),
         [
             "The", " ", "red", " ", "brown", " ", "fox", "\t", "jumped", ",", " ", "over", " ",
             "the", " ", "rolling", " ", "log"
@@ -461,18 +541,90 @@ void func3(){}
         .prettytable();
 }
 
+fn test_colors(changeset: &InlineChangeset, exp: &[(Option<Style>, &str)]) {
+    let color_s: String = collect_strings(exp.iter().map(|(style_opt, s)| {
+        if let Some(style) = style_opt {
+            style.paint(s.to_string()).to_string()
+        } else {
+            s.to_string()
+        }
+    }))
+    .join("");
+    assert_eq!(format!("{}", changeset), color_s);
+}
+
 #[test]
 fn test_diff_words_issue_1() {
+    let insert_style = Colour::Green.normal();
+    let insert_whitespace_style = Colour::White.on(Colour::Green);
+    let remove_style = Colour::Red.strikethrough();
+    let remove_whitespace_style = Colour::White.on(Colour::Red);
     let d1 = diff_words(
         "und meine Unschuld beweisen!",
         "und ich werde meine Unschuld beweisen!",
-    );
+    )
+    .set_insert_style(insert_style)
+    .set_insert_whitespace_style(insert_whitespace_style)
+    .set_remove_style(remove_style)
+    .set_remove_whitespace_style(remove_whitespace_style);
+
     println!("diff_words: {} {:?}", d1, d1.diff());
+
+    test_colors(
+        &d1,
+        &[
+            (None, "und "),
+            (Some(insert_style), "ich"),
+            (Some(insert_whitespace_style), " "),
+            (Some(insert_style), "werde"),
+            (Some(insert_whitespace_style), " "),
+            (None, "meine Unschuld beweisen!"),
+        ],
+    );
+    test_colors(
+        &d1.set_highlight_whitespace(false),
+        &[
+            (None, "und "),
+            (Some(insert_style), "ich werde "),
+            (None, "meine Unschuld beweisen!"),
+        ],
+    );
     let d2 = diff_words(
         "Campaignings aus dem Ausland gegen meine Person ausfindig",
         "Campaignings ausfindig",
     );
     println!("diff_words: {} {:?}", d2, d2.diff());
+    test_colors(
+        &d2,
+        &[
+            (None, "Campaignings "),
+            (Some(remove_style), "aus"),
+            (Some(remove_whitespace_style), " "),
+            (Some(remove_style), "dem"),
+            (Some(remove_whitespace_style), " "),
+            (Some(remove_style), "Ausland"),
+            (Some(remove_whitespace_style), " "),
+            (Some(remove_style), "gegen"),
+            (Some(remove_whitespace_style), " "),
+            (Some(remove_style), "meine"),
+            (Some(remove_whitespace_style), " "),
+            (Some(remove_style), "Person"),
+            (Some(remove_whitespace_style), " "),
+            (None, "ausfindig"),
+        ],
+    );
     let d3 = diff_words("des kriminellen Videos", "des kriminell erstellten Videos");
     println!("diff_words: {} {:?}", d3, d3.diff());
+    test_colors(
+        &d3,
+        &[
+            (None, "des "),
+            (Some(remove_style), "kriminellen"),
+            (Some(insert_style), "kriminell"),
+            (None, " "),
+            (Some(insert_style), "erstellten"),
+            (Some(insert_whitespace_style), " "),
+            (None, "Videos"),
+        ],
+    );
 }
