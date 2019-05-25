@@ -76,11 +76,12 @@ impl<'a> InlineChangeset<'a> {
         a.join(self.separator)
             .chars()
             .map(|i| {
-                if i.is_whitespace() && self.highlight_whitespace {
-                    whitespace_style.paint(i.to_string()).to_string()
+                let style = if i.is_whitespace() && self.highlight_whitespace {
+                    whitespace_style
                 } else {
-                    style.paint(i.to_string()).to_string()
-                }
+                    style
+                };
+                style.paint(i.to_string()).to_string()
             })
             .collect::<Vec<String>>()
             .join("")
