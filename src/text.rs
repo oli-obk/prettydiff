@@ -1,7 +1,9 @@
 //! Utils for diff text
+pub use ansi_term::Style;
+
 use crate::basic;
 use crate::format_table;
-use ansi_term::{Colour, Style};
+use ansi_term::{Colour};
 use prettytable::{Cell, Row};
 use std::fmt;
 
