@@ -44,7 +44,7 @@ fn main() -> std::io::Result<()> {
         .names(&left_name, &right_name)
         .set_show_lines(!opt.disable_lines)
         .set_diff_only(!opt.show_same)
-        .set_aling_new_lines(!opt.disable_align)
+        .set_align_new_lines(!opt.disable_align)
         .prettytable();
 
     Ok(())

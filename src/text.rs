@@ -250,7 +250,7 @@ impl<'a> LineChangeset<'a> {
         self
     }
     /// Align new lines inside diff
-    pub fn set_aling_new_lines(mut self, val: bool) -> Self {
+    pub fn set_align_new_lines(mut self, val: bool) -> Self {
         self.aling_new_lines = val;
         self
     }
@@ -539,7 +539,7 @@ void func3(){}
     println!("====");
     diff_lines(code1_a, code1_b)
         .names("left", "right")
-        .set_aling_new_lines(true)
+        .set_align_new_lines(true)
         .prettytable();
 }
 
