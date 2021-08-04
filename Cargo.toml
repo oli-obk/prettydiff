@@ -13,8 +13,8 @@ homepage = "https://github.com/romankoblov/prettydiff"
 
 [dependencies]
 prettytable-rs = "0.8.0"
-ansi_term = "0.9"
-structopt = { version = "0.2", optional = true }
+ansi_term = "0.12"
+structopt = { version = "0.3", optional = true }
 
 [features]
 cli = ["structopt"]
