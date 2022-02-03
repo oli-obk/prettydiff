@@ -2,9 +2,11 @@
 pub use ansi_term::Style;
 
 use crate::basic;
-use crate::format_table;
+cfg_prettytable! {
+    use crate::format_table;
+    use prettytable::{Cell, Row};
+}
 use ansi_term::{Colour};
-use prettytable::{Cell, Row};
 use std::fmt;
 
 pub struct StringSplitIter<'a, F>
@@ -199,6 +201,8 @@ pub fn diff_words<'a>(old: &'a str, new: &'a str) -> InlineChangeset<'a> {
     InlineChangeset::new(split_words(old).collect(), split_words(new).collect())
 }
 
+
+#[cfg(feature = "prettytable-rs")]
 fn color_multilines(color: Colour, s: &str) -> String {
     collect_strings(s.split('\n').map(|i| color.paint(i))).join("\n")
 }
@@ -259,6 +263,7 @@ impl<'a> LineChangeset<'a> {
         basic::diff(&self.old, &self.new)
     }
 
+    #[cfg(feature = "prettytable-rs")]
     fn prettytable_process(&self, a: &[&str], color: Option<Colour>) -> (String, usize) {
         let mut start = 0;
         let mut stop = a.len();
@@ -288,6 +293,8 @@ impl<'a> LineChangeset<'a> {
             (out.join("\n").replace("\t", "    "), start)
         }
     }
+
+    #[cfg(feature = "prettytable-rs")]
     fn prettytable_process_replace(
         &self,
         old: &[&str],
@@ -320,6 +327,8 @@ impl<'a> LineChangeset<'a> {
 
         ((old_out, new_out), (old_offset, new_offset))
     }
+
+    #[cfg(feature = "prettytable-rs")]
     /// Prints side-by-side diff in table
     pub fn prettytable(&self) {
         let mut table = format_table::new();

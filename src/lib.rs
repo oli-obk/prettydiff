@@ -1,8 +1,18 @@
+macro_rules! cfg_prettytable {( $($item:item)* ) => (
+    $(
+        #[cfg(feature = "prettytable-rs")]
+        $item
+    )*
+)}
+
+#[cfg(feature = "prettytable-rs")]
 #[macro_use]
 extern crate prettytable;
 
 pub mod basic;
-pub mod format_table;
+cfg_prettytable! {
+    pub mod format_table;
+}
 pub mod lcs;
 pub mod text;
 
