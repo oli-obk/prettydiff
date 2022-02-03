@@ -1,8 +1,10 @@
 //! Common functions for [Longest common subsequences](https://en.wikipedia.org/wiki/Longest_common_subsequence_problem)
 //! on slice.
 
-use crate::format_table;
-use prettytable::{Cell, Row};
+cfg_prettytable! {
+    use crate::format_table;
+    use prettytable::{Cell, Row};
+}
 use std::cmp::max;
 
 #[derive(Debug)]
@@ -88,6 +90,8 @@ where
         common
     }
 }
+
+#[cfg(feature = "prettytable-rs")]
 /// Prints pretty-table for LCS
 impl<'a, T> std::fmt::Display for Table<'a, T>
 where
