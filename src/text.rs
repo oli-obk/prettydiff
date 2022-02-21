@@ -274,11 +274,11 @@ impl<'a> LineChangeset<'a> {
                 }
                 start = index + 1;
             }
-            for (index, element) in a[start..stop].iter().rev().enumerate() {
+            for (index, element) in a.iter().enumerate().rev() {
                 if *element != "" {
+                    stop = index + 1;
                     break;
                 }
-                stop = index;
             }
         }
         let out = &a[start..stop];
