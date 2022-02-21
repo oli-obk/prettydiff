@@ -274,11 +274,11 @@ impl<'a> LineChangeset<'a> {
                 }
                 start = index + 1;
             }
-            for (index, element) in a[start..stop].iter().rev().enumerate() {
+            for (index, element) in a.iter().enumerate().rev() {
                 if *element != "" {
+                    stop = index + 1;
                     break;
                 }
-                stop = index;
             }
         }
         let out = &a[start..stop];
@@ -638,4 +638,25 @@ fn test_diff_words_issue_1() {
             (None, "Videos"),
         ],
     );
+}
+
+#[test]
+fn test_prettytable_process() {
+    let d1 = diff_lines(
+        r#"line1
+        line2
+        line3
+        "#,
+        r#"line1
+        line2
+        line2.5
+        line3
+        "#,
+    );
+
+    println!("diff_lines: {} {:?}", d1, d1.diff());
+    assert_eq!(d1.prettytable_process(&["a", "b", "c"], None), (String::from("a\nb\nc"), 0));
+    assert_eq!(d1.prettytable_process(&["a", "b", "c", ""], None), (String::from("a\nb\nc"), 0));
+    assert_eq!(d1.prettytable_process(&["", "a", "b", "c"], None), (String::from("a\nb\nc"), 1));
+    assert_eq!(d1.prettytable_process(&["", "a", "b", "c", ""], None), (String::from("a\nb\nc"), 1));
 }
