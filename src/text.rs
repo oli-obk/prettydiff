@@ -212,8 +212,8 @@ fn color_multilines(color: Colour, s: &str) -> String {
 
 #[derive(Debug)]
 pub struct ContextConfig<'a> {
-    context_size: usize,
-    skipping_marker: &'a str,
+    pub context_size: usize,
+    pub skipping_marker: &'a str,
 }
 
 /// Container for line-by-line text diff result. Can be pretty-printed by Display trait.
@@ -495,10 +495,10 @@ impl<'a> LineChangeset<'a> {
 
         let mut next_line = 1;
 
-        let diff = self.diff();
+        let mut diff = self.diff().into_iter().peekable();
         let mut out: Vec<String> = Vec::with_capacity(diff.len());
         let mut at_beginning = true;
-        for op in diff {
+        while let Some(op) = diff.next() {
             match op {
                 basic::DiffOp::Equal(a) => match context_config {
                     None => out.push(a.join("\n")),
@@ -530,6 +530,9 @@ impl<'a> LineChangeset<'a> {
                         if lower_bound > 0 {
                             out.push(skipping_marker.to_string());
                             next_line += lower_bound
+                        }
+                        if diff.peek().is_none() {
+                            continue;
                         }
                         if let Some(newlines) = self.format_equal(
                             &lines[lower_bound..],
