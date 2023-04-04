@@ -6,8 +6,12 @@ cfg_prettytable! {
     use crate::format_table;
     use prettytable::{Cell, Row};
 }
-use ansi_term::{Colour};
-use std::fmt;
+use ansi_term::Colour;
+use pad::{Alignment, PadStr};
+use std::{
+    cmp::{max, min},
+    fmt,
+};
 
 pub struct StringSplitIter<'a, F>
 where
@@ -201,10 +205,15 @@ pub fn diff_words<'a>(old: &'a str, new: &'a str) -> InlineChangeset<'a> {
     InlineChangeset::new(split_words(old).collect(), split_words(new).collect())
 }
 
-
 #[cfg(feature = "prettytable-rs")]
 fn color_multilines(color: Colour, s: &str) -> String {
     collect_strings(s.split('\n').map(|i| color.paint(i))).join("\n")
+}
+
+#[derive(Debug)]
+pub struct ContextConfig<'a> {
+    context_size: usize,
+    skipping_marker: &'a str,
 }
 
 /// Container for line-by-line text diff result. Can be pretty-printed by Display trait.
@@ -389,27 +398,167 @@ impl<'a> LineChangeset<'a> {
         table.printstd();
     }
 
-    fn remove_color(&self, a: &[&str]) -> String {
-        Colour::Red.strikethrough().paint(a.join("\n")).to_string()
+    fn remove_color(&self, a: &str) -> String {
+        Colour::Red.strikethrough().paint(a).to_string()
     }
 
-    fn insert_color(&self, a: &[&str]) -> String {
-        Colour::Green.paint(a.join("\n")).to_string()
+    fn insert_color(&self, a: &str) -> String {
+        Colour::Green.paint(a).to_string()
     }
 
+    /// Returns formatted string with colors
     pub fn format(&self) -> String {
+        self.format_with_context(None, false)
+    }
+
+    /// Formats lines in DiffOp::Equal
+    fn format_equal(
+        &self,
+        lines: &[&str],
+        display_line_numbers: bool,
+        prefix_size: usize,
+        line_counter: &mut usize,
+    ) -> Option<String> {
+        lines
+            .iter()
+            .map(|line| {
+                let res = if display_line_numbers {
+                    format!("{} ", *line_counter)
+                        .pad_to_width_with_alignment(prefix_size, Alignment::Right)
+                        + line
+                } else {
+                    "".pad_to_width(prefix_size) + line
+                };
+                *line_counter += 1;
+                res
+            })
+            .reduce(|acc, line| acc + "\n" + &line)
+    }
+
+    /// Formats lines in DiffOp::Remove
+    fn format_remove(
+        &self,
+        lines: &[&str],
+        display_line_numbers: bool,
+        prefix_size: usize,
+        line_counter: &mut usize,
+    ) -> String {
+        lines
+            .iter()
+            .map(|line| {
+                let res = if display_line_numbers {
+                    format!("{} ", *line_counter)
+                        .pad_to_width_with_alignment(prefix_size, Alignment::Right)
+                        + &self.remove_color(line)
+                } else {
+                    "".pad_to_width(prefix_size) + &self.remove_color(line)
+                };
+                *line_counter += 1;
+                res
+            })
+            .reduce(|acc, line| acc + "\n" + &line)
+            .unwrap()
+    }
+
+    /// Formats lines in DiffOp::Insert
+    fn format_insert(&self, lines: &[&str], prefix_size: usize) -> String {
+        lines
+            .iter()
+            .map(|line| "".pad_to_width(prefix_size) + &self.insert_color(line))
+            .reduce(|acc, line| acc + "\n" + &line)
+            .unwrap()
+    }
+
+    /// Returns formatted string with colors.
+    /// May omit identical lines, if `context_size` is `Some(k)`.
+    /// In this case, only print identical lines if they are within `k` lines
+    /// of a changed line (as in `diff -C`).
+    pub fn format_with_context(
+        &self,
+        context_config: Option<ContextConfig>,
+        display_line_numbers: bool,
+    ) -> String {
+        let line_number_size = if display_line_numbers {
+            (self.old.len() as f64).log10().ceil() as usize
+        } else {
+            0
+        };
+        let skipping_marker_size = if let Some(ContextConfig {
+            skipping_marker, ..
+        }) = context_config
+        {
+            skipping_marker.len()
+        } else {
+            0
+        };
+        let prefix_size = max(line_number_size, skipping_marker_size) + 1;
+
+        let mut next_line = 1;
+
         let diff = self.diff();
         let mut out: Vec<String> = Vec::with_capacity(diff.len());
+        let mut at_beginning = true;
         for op in diff {
             match op {
-                basic::DiffOp::Equal(a) => out.push(a.join("\n")),
-                basic::DiffOp::Insert(a) => out.push(self.insert_color(a)),
-                basic::DiffOp::Remove(a) => out.push(self.remove_color(a)),
+                basic::DiffOp::Equal(a) => match context_config {
+                    None => out.push(a.join("\n")),
+                    Some(ContextConfig {
+                        context_size,
+                        skipping_marker,
+                    }) => {
+                        let mut lines = a;
+                        if !at_beginning {
+                            let upper_bound = min(context_size, lines.len());
+                            if let Some(newlines) = self.format_equal(
+                                &lines[..upper_bound],
+                                display_line_numbers,
+                                prefix_size,
+                                &mut next_line,
+                            ) {
+                                out.push(newlines)
+                            }
+                            lines = &lines[upper_bound..];
+                        }
+                        if lines.len() == 0 {
+                            continue;
+                        }
+                        let lower_bound = if lines.len() > context_size {
+                            lines.len() - context_size
+                        } else {
+                            0
+                        };
+                        if lower_bound > 0 {
+                            out.push(skipping_marker.to_string());
+                            next_line += lower_bound
+                        }
+                        if let Some(newlines) = self.format_equal(
+                            &lines[lower_bound..],
+                            display_line_numbers,
+                            prefix_size,
+                            &mut next_line,
+                        ) {
+                            out.push(newlines)
+                        }
+                    }
+                },
+                basic::DiffOp::Insert(a) => out.push(self.format_insert(a, prefix_size)),
+                basic::DiffOp::Remove(a) => out.push(self.format_remove(
+                    a,
+                    display_line_numbers,
+                    prefix_size,
+                    &mut next_line,
+                )),
                 basic::DiffOp::Replace(a, b) => {
-                    out.push(self.remove_color(a));
-                    out.push(self.insert_color(b));
+                    out.push(self.format_remove(
+                        a,
+                        display_line_numbers,
+                        prefix_size,
+                        &mut next_line,
+                    ));
+                    out.push(self.format_insert(b, prefix_size));
                 }
             }
+            at_beginning = false;
         }
         out.join("\n")
     }
@@ -659,4 +808,67 @@ fn test_prettytable_process() {
     assert_eq!(d1.prettytable_process(&["a", "b", "c", ""], None), (String::from("a\nb\nc"), 0));
     assert_eq!(d1.prettytable_process(&["", "a", "b", "c"], None), (String::from("a\nb\nc"), 1));
     assert_eq!(d1.prettytable_process(&["", "a", "b", "c", ""], None), (String::from("a\nb\nc"), 1));
+}
+
+#[test]
+fn test_format_with_context() {
+    let d = diff_lines(
+        r#"line1
+        line2
+        line3
+        line4
+        line5
+        line6
+        line7
+        line8
+        line9
+        line10
+        line11
+        line12"#,
+        r#"line1
+        line2
+        line4
+        line5
+        line6.5
+        line7
+        line8
+        line9
+        line10
+        line11.5
+        line12"#,
+    );
+    let context = |n| ContextConfig {
+        context_size: n,
+        skipping_marker: "...",
+    };
+    println!(
+        "diff_lines:\n{}\n{:?}",
+        d.format_with_context(Some(context(0)), true),
+        d.diff()
+    );
+    let formatted_none = d.format_with_context(None, true);
+    let formatted_some_0 = d.format_with_context(Some(context(0)), true);
+    let formatted_some_1 = d.format_with_context(Some(context(1)), true);
+    let formatted_some_2 = d.format_with_context(Some(context(2)), true);
+    // With a context of size 2, every line is present
+    assert_eq!(
+        formatted_none.lines().count(),
+        formatted_some_2.lines().count()
+    );
+    // with a context of size 1:
+    // * line 1 is replaced by '...' (-0 lines)
+    // * line 8-9 are replaced by '...' (-1 line)
+    assert_eq!(
+        formatted_none.lines().count() - 1,
+        formatted_some_1.lines().count()
+    );
+    // with a context of size 0:
+    // * lines 1-2 are replaced by '...' (-1 line)
+    // * lines 4-5 are replaced by '...' (-1 line)
+    // * lines 7-10 are replaced by '...' (-3 lines)
+    // * line 12 is replaced by '...' (-0 lines)
+    assert_eq!(
+        formatted_none.lines().count() - 5,
+        formatted_some_0.lines().count()
+    );
 }
