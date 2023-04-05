@@ -17,6 +17,7 @@ homepage = "https://github.com/romankoblov/prettydiff"
 
 [dependencies]
 ansi_term.version = "0.12"
+pad = "0.1.6"
 prettytable-rs.version = "0.10.0"
 structopt.version = "0.3"
 
