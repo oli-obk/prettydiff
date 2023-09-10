@@ -14,6 +14,7 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/romankoblov/prettydiff"
 homepage = "https://github.com/romankoblov/prettydiff"
+rust-version = "1.70"
 
 [dependencies]
 ansi_term.version = "0.12"
@@ -27,3 +28,6 @@ structopt.optional = true
 [features]
 cli = ["prettytable-rs", "structopt"]
 default = ["cli"]
+
+[patch.crates-io]
+prettytable-rs = { git = "https://github.com/asomers/prettytable-rs.git", rev = "1e2c2d5c3" }
