@@ -338,8 +338,7 @@ impl<'a> LineChangeset<'a> {
     }
 
     #[cfg(feature = "prettytable-rs")]
-    /// Prints side-by-side diff in table
-    pub fn prettytable(&self) {
+    fn prettytable_mktable(&self) -> prettytable::Table {
         let mut table = format_table::new();
         if let Some((old, new)) = &self.names {
             let mut header = vec![];
@@ -395,7 +394,23 @@ impl<'a> LineChangeset<'a> {
                 table.add_row(row![old, new]);
             }
         }
+        table
+    }
+
+    #[cfg(feature = "prettytable-rs")]
+    /// Prints side-by-side diff in table
+    pub fn prettytable(&self) {
+        let table = self.prettytable_mktable();
         table.printstd();
+    }
+
+    #[cfg(feature = "prettytable-rs")]
+    /// Write side-by-side diff in table to any Writer.
+    pub fn write_prettytable<W>(&self, f: &mut W) -> std::io::Result<usize>
+        where W: std::io::Write + std::io::IsTerminal
+    {
+        let table = self.prettytable_mktable();
+        table.print_term(f)
     }
 
     fn remove_color(&self, a: &str) -> String {
