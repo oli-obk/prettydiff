@@ -1,12 +1,11 @@
 //! Utils for diff text
-pub use ansi_term::Style;
-
+use owo_colors::{AnsiColors, OwoColorize, Style};
+use owo_colors::AnsiColors::{Green, Red};
 use crate::basic;
 cfg_prettytable! {
     use crate::format_table;
     use prettytable::{Cell, Row};
 }
-use ansi_term::Colour;
 use pad::{Alignment, PadStr};
 use std::{
     cmp::{max, min},
@@ -93,10 +92,10 @@ impl<'a> InlineChangeset<'a> {
             new,
             separator: "",
             highlight_whitespace: true,
-            insert_style: Colour::Green.normal(),
-            insert_whitespace_style: Colour::White.on(Colour::Green),
-            remove_style: Colour::Red.strikethrough(),
-            remove_whitespace_style: Colour::White.on(Colour::Red),
+            insert_style: Style::new().green(),
+            insert_whitespace_style: Style::new().white().on_green(),
+            remove_style: Style::new().red().strikethrough(),
+            remove_whitespace_style: Style::new().white().on_red(),
         }
     }
     /// Highlight whitespaces in case of insert/remove?
@@ -153,11 +152,11 @@ impl<'a> InlineChangeset<'a> {
                 } else {
                     style
                 };
-                style.paint(s)
+                s.style(style).to_string()
             }))
             .join("")
         } else {
-            style.paint(s).to_string()
+            s.style(style).to_string()
         }
     }
 
@@ -206,8 +205,8 @@ pub fn diff_words<'a>(old: &'a str, new: &'a str) -> InlineChangeset<'a> {
 }
 
 #[cfg(feature = "prettytable-rs")]
-fn color_multilines(color: Colour, s: &str) -> String {
-    collect_strings(s.split('\n').map(|i| color.paint(i))).join("\n")
+fn color_multilines(color: AnsiColors, s: &str) -> String {
+    collect_strings(s.split('\n').map(|i| i.color(color).to_string())).join("\n")
 }
 
 #[derive(Debug)]
@@ -273,7 +272,7 @@ impl<'a> LineChangeset<'a> {
     }
 
     #[cfg(feature = "prettytable-rs")]
-    fn prettytable_process(&self, a: &[&str], color: Option<Colour>) -> (String, usize) {
+    fn prettytable_process(&self, a: &[&str], color: Option<AnsiColors>) -> (String, usize) {
         let mut start = 0;
         let mut stop = a.len();
         if self.trim_new_lines {
@@ -293,7 +292,7 @@ impl<'a> LineChangeset<'a> {
         let out = &a[start..stop];
         if let Some(color) = color {
             (
-                collect_strings(out.iter().map(|i| color.paint(*i).to_string()))
+                collect_strings(out.iter().map(|i| (*i).color(color) ))
                     .join("\n")
                     .replace("\t", "    "),
                 start,
@@ -309,6 +308,7 @@ impl<'a> LineChangeset<'a> {
         old: &[&str],
         new: &[&str],
     ) -> ((String, String), (usize, usize)) {
+        // White is dummy argument
         let (old, old_offset) = self.prettytable_process(old, None);
         let (new, new_offset) = self.prettytable_process(new, None);
 
@@ -322,14 +322,14 @@ impl<'a> LineChangeset<'a> {
                     new_out.push_str(&a.join(""));
                 }
                 basic::DiffOp::Insert(a) => {
-                    new_out.push_str(&color_multilines(Colour::Green, &a.join("")));
+                    new_out.push_str(&color_multilines(Green, &a.join("")));
                 }
                 basic::DiffOp::Remove(a) => {
-                    old_out.push_str(&color_multilines(Colour::Red, &a.join("")));
+                    old_out.push_str(&color_multilines(Red, &a.join("")));
                 }
                 basic::DiffOp::Replace(a, b) => {
-                    old_out.push_str(&color_multilines(Colour::Red, &a.join("")));
-                    new_out.push_str(&color_multilines(Colour::Green, &b.join("")));
+                    old_out.push_str(&color_multilines(Red, &a.join("")));
+                    new_out.push_str(&color_multilines(Green, &b.join("")));
                 }
             }
         }
@@ -345,11 +345,11 @@ impl<'a> LineChangeset<'a> {
             if self.show_lines {
                 header.push(Cell::new(""));
             }
-            header.push(Cell::new(&Colour::Cyan.paint(old.to_string()).to_string()));
+            header.push(Cell::new(&old.cyan().to_string()));
             if self.show_lines {
                 header.push(Cell::new(""));
             }
-            header.push(Cell::new(&Colour::Cyan.paint(new.to_string()).to_string()));
+            header.push(Cell::new(&new.cyan().to_string()));
             table.set_titles(Row::new(header));
         }
         let mut old_lines = 1;
@@ -366,12 +366,12 @@ impl<'a> LineChangeset<'a> {
                     new_lines += a.len();
                 }
                 basic::DiffOp::Insert(a) => {
-                    let (new, offset) = self.prettytable_process(a, Some(Colour::Green));
+                    let (new, offset) = self.prettytable_process(a, Some(Green));
                     out.push((old_lines, "".to_string(), new_lines + offset, new));
                     new_lines += a.len();
                 }
                 basic::DiffOp::Remove(a) => {
-                    let (old, offset) = self.prettytable_process(a, Some(Colour::Red));
+                    let (old, offset) = self.prettytable_process(a, Some(Red));
                     out.push((old_lines + offset, old, new_lines, "".to_string()));
                     old_lines += a.len();
                 }
@@ -414,11 +414,11 @@ impl<'a> LineChangeset<'a> {
     }
 
     fn remove_color(&self, a: &str) -> String {
-        Colour::Red.strikethrough().paint(a).to_string()
+        a.red().strikethrough().to_string()
     }
 
     fn insert_color(&self, a: &str) -> String {
-        Colour::Green.paint(a).to_string()
+        a.green().to_string()
     }
 
     /// Returns formatted string with colors
@@ -722,7 +722,7 @@ void func3(){}
 fn _test_colors(changeset: &InlineChangeset, exp: &[(Option<Style>, &str)]) {
     let color_s: String = collect_strings(exp.iter().map(|(style_opt, s)| {
         if let Some(style) = style_opt {
-            style.paint(s.to_string()).to_string()
+            s.style(*style).to_string()
         } else {
             s.to_string()
         }
@@ -733,10 +733,10 @@ fn _test_colors(changeset: &InlineChangeset, exp: &[(Option<Style>, &str)]) {
 
 #[test]
 fn test_diff_words_issue_1() {
-    let insert_style = Colour::Green.normal();
-    let insert_whitespace_style = Colour::White.on(Colour::Green);
-    let remove_style = Colour::Red.strikethrough();
-    let remove_whitespace_style = Colour::White.on(Colour::Red);
+    let insert_style = Style::new().green();
+    let insert_whitespace_style = Style::new().white().on_green();
+    let remove_style = Style::new().red().strikethrough();
+    let remove_whitespace_style = Style::new().white().on_red();
     let d1 = diff_words(
         "und meine Unschuld beweisen!",
         "und ich werde meine Unschuld beweisen!",

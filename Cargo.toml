@@ -17,7 +17,7 @@ homepage = "https://github.com/romankoblov/prettydiff"
 rust-version = "1.70"
 
 [dependencies]
-ansi_term.version = "0.12"
+owo-colors.version = "3.5.0"
 pad = "0.1.6"
 prettytable-rs.version = "0.10.0"
 structopt.version = "0.3"
