@@ -20,6 +20,3 @@ prettytable-rs = { version = "0.10.0", optional = true }
 [features]
 cli = ["prettytable-rs"]
 default = ["cli"]
-
-[patch.crates-io]
-prettytable-rs = { git = "https://github.com/asomers/prettytable-rs.git", rev = "1e2c2d5c3" }
