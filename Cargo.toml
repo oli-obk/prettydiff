@@ -4,7 +4,7 @@ required-features = ["cli"]
 
 [package]
 name = "prettydiff"
-version = "0.6.5"
+version = "0.7.0"
 authors = ["Roman Koblov <penpen938@me.com>"]
 edition = "2018"
 description = "Side-by-side diff for two files"
