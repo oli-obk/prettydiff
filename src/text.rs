@@ -195,8 +195,8 @@ impl<'a> fmt::Display for InlineChangeset<'a> {
 }
 
 pub fn diff_chars<'a>(old: &'a str, new: &'a str) -> InlineChangeset<'a> {
-    let old: Vec<&str> = old.split("").filter(|&i| i != "").collect();
-    let new: Vec<&str> = new.split("").filter(|&i| i != "").collect();
+    let old: Vec<&str> = old.split("").filter(|&i| !i.is_empty()).collect();
+    let new: Vec<&str> = new.split("").filter(|&i| !i.is_empty()).collect();
 
     InlineChangeset::new(old, new)
 }
@@ -279,13 +279,13 @@ impl<'a> LineChangeset<'a> {
         let mut stop = a.len();
         if self.trim_new_lines {
             for (index, element) in a.iter().enumerate() {
-                if *element != "" {
+                if !element.is_empty() {
                     break;
                 }
                 start = index + 1;
             }
             for (index, element) in a.iter().enumerate().rev() {
-                if *element != "" {
+                if !element.is_empty() {
                     stop = index + 1;
                     break;
                 }
@@ -296,11 +296,11 @@ impl<'a> LineChangeset<'a> {
             (
                 collect_strings(out.iter().map(|i| (*i).color(color)))
                     .join("\n")
-                    .replace("\t", "    "),
+                    .replace('\t', "    "),
                 start,
             )
         } else {
-            (out.join("\n").replace("\t", "    "), start)
+            (out.join("\n").replace('\t', "    "), start)
         }
     }
 
@@ -537,7 +537,7 @@ impl<'a> LineChangeset<'a> {
                             }
                             lines = &lines[upper_bound..];
                         }
-                        if lines.len() == 0 {
+                        if lines.is_empty() {
                             continue;
                         }
                         let lower_bound = if lines.len() > context_size {
@@ -600,7 +600,7 @@ pub fn diff_lines<'a>(old: &'a str, new: &'a str) -> LineChangeset<'a> {
 
 fn _test_splitter_basic(text: &str, exp: &[&str]) {
     let res = collect_strings(
-        split_by_char_fn(&text, |c: char| c.is_whitespace()).map(|s| s.to_string()),
+        split_by_char_fn(text, |c: char| c.is_whitespace()).map(|s| s.to_string()),
     );
     assert_eq!(res, exp)
 }
