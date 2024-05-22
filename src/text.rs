@@ -15,7 +15,8 @@ use std::{
 use pad::{Alignment, PadStr};
 
 pub struct StringSplitIter<'a, F>
-where F: Fn(char) -> bool
+where
+    F: Fn(char) -> bool,
 {
     last: usize,
     text: &'a str,
@@ -24,7 +25,8 @@ where F: Fn(char) -> bool
 }
 
 impl<'a, F> Iterator for StringSplitIter<'a, F>
-where F: Fn(char) -> bool
+where
+    F: Fn(char) -> bool,
 {
     type Item = &'a str;
     fn next(&mut self) -> Option<Self::Item> {
@@ -56,8 +58,15 @@ pub fn collect_strings<T: ToString>(it: impl Iterator<Item = T>) -> Vec<String> 
 
 /// Split string by clousure (Fn(char)->bool) keeping delemiters
 pub fn split_by_char_fn<F>(text: &'_ str, pat: F) -> StringSplitIter<'_, F>
-where F: Fn(char) -> bool {
-    StringSplitIter { last: 0, text, matched: None, iter: text.match_indices(pat) }
+where
+    F: Fn(char) -> bool,
+{
+    StringSplitIter {
+        last: 0,
+        text,
+        matched: None,
+        iter: text.match_indices(pat),
+    }
 }
 
 /// Split string by non-alphanumeric characters keeping delemiters
@@ -136,7 +145,11 @@ impl<'a> InlineChangeset<'a> {
         let s = a.join(self.separator);
         if self.highlight_whitespace {
             collect_strings(split_by_char_fn(&s, |c| c.is_whitespace()).map(|s| {
-                let style = if s.chars().next().map_or_else(|| false, |c| c.is_whitespace()) {
+                let style = if s
+                    .chars()
+                    .next()
+                    .map_or_else(|| false, |c| c.is_whitespace())
+                {
                     whitespace_style
                 } else {
                     style
@@ -293,7 +306,9 @@ impl<'a> LineChangeset<'a> {
 
     #[cfg(feature = "prettytable-rs")]
     fn prettytable_process_replace(
-        &self, old: &[&str], new: &[&str],
+        &self,
+        old: &[&str],
+        new: &[&str],
     ) -> ((String, String), (usize, usize)) {
         // White is dummy argument
         let (old, old_offset) = self.prettytable_process(old, None);
@@ -394,7 +409,9 @@ impl<'a> LineChangeset<'a> {
     #[cfg(feature = "prettytable-rs")]
     /// Write side-by-side diff in table to any Writer.
     pub fn write_prettytable<W>(&self, f: &mut W) -> std::io::Result<usize>
-    where W: std::io::Write + std::io::IsTerminal {
+    where
+        W: std::io::Write + std::io::IsTerminal,
+    {
         let table = self.prettytable_mktable();
         table.print(f)
     }
@@ -414,7 +431,10 @@ impl<'a> LineChangeset<'a> {
 
     /// Formats lines in DiffOp::Equal
     fn format_equal(
-        &self, lines: &[&str], display_line_numbers: bool, prefix_size: usize,
+        &self,
+        lines: &[&str],
+        display_line_numbers: bool,
+        prefix_size: usize,
         line_counter: &mut usize,
     ) -> Option<String> {
         lines
@@ -435,7 +455,10 @@ impl<'a> LineChangeset<'a> {
 
     /// Formats lines in DiffOp::Remove
     fn format_remove(
-        &self, lines: &[&str], display_line_numbers: bool, prefix_size: usize,
+        &self,
+        lines: &[&str],
+        display_line_numbers: bool,
+        prefix_size: usize,
         line_counter: &mut usize,
     ) -> String {
         lines
@@ -469,16 +492,23 @@ impl<'a> LineChangeset<'a> {
     /// In this case, only print identical lines if they are within `k` lines
     /// of a changed line (as in `diff -C`).
     pub fn format_with_context(
-        &self, context_config: Option<ContextConfig>, display_line_numbers: bool,
+        &self,
+        context_config: Option<ContextConfig>,
+        display_line_numbers: bool,
     ) -> String {
-        let line_number_size =
-            if display_line_numbers { (self.old.len() as f64).log10().ceil() as usize } else { 0 };
-        let skipping_marker_size =
-            if let Some(ContextConfig { skipping_marker, .. }) = context_config {
-                skipping_marker.len()
-            } else {
-                0
-            };
+        let line_number_size = if display_line_numbers {
+            (self.old.len() as f64).log10().ceil() as usize
+        } else {
+            0
+        };
+        let skipping_marker_size = if let Some(ContextConfig {
+            skipping_marker, ..
+        }) = context_config
+        {
+            skipping_marker.len()
+        } else {
+            0
+        };
         let prefix_size = max(line_number_size, skipping_marker_size) + 1;
 
         let mut next_line = 1;
@@ -490,7 +520,10 @@ impl<'a> LineChangeset<'a> {
             match op {
                 basic::DiffOp::Equal(a) => match context_config {
                     None => out.push(a.join("\n")),
-                    Some(ContextConfig { context_size, skipping_marker }) => {
+                    Some(ContextConfig {
+                        context_size,
+                        skipping_marker,
+                    }) => {
                         let mut lines = a;
                         if !at_beginning {
                             let upper_bound = min(context_size, lines.len());
@@ -507,8 +540,11 @@ impl<'a> LineChangeset<'a> {
                         if lines.len() == 0 {
                             continue;
                         }
-                        let lower_bound =
-                            if lines.len() > context_size { lines.len() - context_size } else { 0 };
+                        let lower_bound = if lines.len() > context_size {
+                            lines.len() - context_size
+                        } else {
+                            0
+                        };
                         if lower_bound > 0 {
                             out.push(skipping_marker.to_string());
                             next_line += lower_bound
@@ -632,10 +668,18 @@ fn test_basic() {
 
 #[test]
 fn test_split_words() {
-    assert_eq!(collect_strings(split_words("Hello World")), ["Hello", " ", "World"]);
-    assert_eq!(collect_strings(split_words("Hello😋World")), ["Hello", "😋", "World"]);
     assert_eq!(
-        collect_strings(split_words("The red brown fox\tjumped, over the rolling log")),
+        collect_strings(split_words("Hello World")),
+        ["Hello", " ", "World"]
+    );
+    assert_eq!(
+        collect_strings(split_words("Hello😋World")),
+        ["Hello", "😋", "World"]
+    );
+    assert_eq!(
+        collect_strings(split_words(
+            "The red brown fox\tjumped, over the rolling log"
+        )),
         [
             "The", " ", "red", " ", "brown", " ", "fox", "\t", "jumped", ",", " ", "over", " ",
             "the", " ", "rolling", " ", "log"
@@ -672,7 +716,10 @@ void func3(){}
     println!("diff_lines:");
     println!("{}", diff_lines(code1_a, code1_b));
     println!("====");
-    diff_lines(code1_a, code1_b).names("left", "right").set_align_new_lines(true).prettytable();
+    diff_lines(code1_a, code1_b)
+        .names("left", "right")
+        .set_align_new_lines(true)
+        .prettytable();
 }
 
 fn _test_colors(changeset: &InlineChangeset, exp: &[(Option<Style>, &str)]) {
@@ -693,11 +740,14 @@ fn test_diff_words_issue_1() {
     let insert_whitespace_style = Style::new().white().on_green();
     let remove_style = Style::new().red().strikethrough();
     let remove_whitespace_style = Style::new().white().on_red();
-    let d1 = diff_words("und meine Unschuld beweisen!", "und ich werde meine Unschuld beweisen!")
-        .set_insert_style(insert_style)
-        .set_insert_whitespace_style(insert_whitespace_style)
-        .set_remove_style(remove_style)
-        .set_remove_whitespace_style(remove_whitespace_style);
+    let d1 = diff_words(
+        "und meine Unschuld beweisen!",
+        "und ich werde meine Unschuld beweisen!",
+    )
+    .set_insert_style(insert_style)
+    .set_insert_whitespace_style(insert_whitespace_style)
+    .set_remove_style(remove_style)
+    .set_remove_whitespace_style(remove_whitespace_style);
 
     println!("diff_words: {} {:?}", d1, d1.diff());
 
@@ -714,7 +764,11 @@ fn test_diff_words_issue_1() {
     );
     _test_colors(
         &d1.set_highlight_whitespace(false),
-        &[(None, "und "), (Some(insert_style), "ich werde "), (None, "meine Unschuld beweisen!")],
+        &[
+            (None, "und "),
+            (Some(insert_style), "ich werde "),
+            (None, "meine Unschuld beweisen!"),
+        ],
     );
     let d2 = diff_words(
         "Campaignings aus dem Ausland gegen meine Person ausfindig",
@@ -771,9 +825,18 @@ fn test_prettytable_process() {
     );
 
     println!("diff_lines: {} {:?}", d1, d1.diff());
-    assert_eq!(d1.prettytable_process(&["a", "b", "c"], None), (String::from("a\nb\nc"), 0));
-    assert_eq!(d1.prettytable_process(&["a", "b", "c", ""], None), (String::from("a\nb\nc"), 0));
-    assert_eq!(d1.prettytable_process(&["", "a", "b", "c"], None), (String::from("a\nb\nc"), 1));
+    assert_eq!(
+        d1.prettytable_process(&["a", "b", "c"], None),
+        (String::from("a\nb\nc"), 0)
+    );
+    assert_eq!(
+        d1.prettytable_process(&["a", "b", "c", ""], None),
+        (String::from("a\nb\nc"), 0)
+    );
+    assert_eq!(
+        d1.prettytable_process(&["", "a", "b", "c"], None),
+        (String::from("a\nb\nc"), 1)
+    );
     assert_eq!(
         d1.prettytable_process(&["", "a", "b", "c", ""], None),
         (String::from("a\nb\nc"), 1)
@@ -807,22 +870,38 @@ fn test_format_with_context() {
         line11.5
         line12"#,
     );
-    let context = |n| ContextConfig { context_size: n, skipping_marker: "..." };
-    println!("diff_lines:\n{}\n{:?}", d.format_with_context(Some(context(0)), true), d.diff());
+    let context = |n| ContextConfig {
+        context_size: n,
+        skipping_marker: "...",
+    };
+    println!(
+        "diff_lines:\n{}\n{:?}",
+        d.format_with_context(Some(context(0)), true),
+        d.diff()
+    );
     let formatted_none = d.format_with_context(None, true);
     let formatted_some_0 = d.format_with_context(Some(context(0)), true);
     let formatted_some_1 = d.format_with_context(Some(context(1)), true);
     let formatted_some_2 = d.format_with_context(Some(context(2)), true);
     // With a context of size 2, every line is present
-    assert_eq!(formatted_none.lines().count(), formatted_some_2.lines().count());
+    assert_eq!(
+        formatted_none.lines().count(),
+        formatted_some_2.lines().count()
+    );
     // with a context of size 1:
     // * line 1 is replaced by '...' (-0 lines)
     // * line 8-9 are replaced by '...' (-1 line)
-    assert_eq!(formatted_none.lines().count() - 1, formatted_some_1.lines().count());
+    assert_eq!(
+        formatted_none.lines().count() - 1,
+        formatted_some_1.lines().count()
+    );
     // with a context of size 0:
     // * lines 1-2 are replaced by '...' (-1 line)
     // * lines 4-5 are replaced by '...' (-1 line)
     // * lines 7-10 are replaced by '...' (-3 lines)
     // * line 12 is replaced by '...' (-0 lines)
-    assert_eq!(formatted_none.lines().count() - 5, formatted_some_0.lines().count());
+    assert_eq!(
+        formatted_none.lines().count() - 5,
+        formatted_some_0.lines().count()
+    );
 }

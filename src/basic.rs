@@ -1,7 +1,7 @@
 //! Basic diff functions
 use crate::lcs;
-use std::fmt;
 use owo_colors::OwoColorize;
+use std::fmt;
 
 /// Single change in original slice needed to get new slice
 #[derive(Debug, PartialEq, Eq)]
@@ -83,11 +83,7 @@ impl<'a, T: fmt::Display> SliceChangeset<'a, T> {
                     let max_len = std::cmp::max(a.len(), b.len());
 
                     for i in 0..min_len {
-                        out.push(
-                                format!("~   {} -> {}", a[i], b[i])
-                                .yellow()
-                                .to_string(),
-                        );
+                        out.push(format!("~   {} -> {}", a[i], b[i]).yellow().to_string());
                     }
                     for i in min_len..max_len {
                         if max_len == a.len() {
