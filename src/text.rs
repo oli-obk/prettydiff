@@ -599,9 +599,8 @@ pub fn diff_lines<'a>(old: &'a str, new: &'a str) -> LineChangeset<'a> {
 }
 
 fn _test_splitter_basic(text: &str, exp: &[&str]) {
-    let res = collect_strings(
-        split_by_char_fn(text, |c: char| c.is_whitespace()).map(|s| s.to_string()),
-    );
+    let res =
+        collect_strings(split_by_char_fn(text, |c: char| c.is_whitespace()).map(|s| s.to_string()));
     assert_eq!(res, exp)
 }
 
