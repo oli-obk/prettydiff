@@ -172,7 +172,7 @@ fn test_table() {
 
     let table = Table::new(&x, &y);
     assert_eq!(
-        format!("{}", table),
+        format!("{}", table).replace('\r', ""),
         r#"
 ┌───┬───┬───┬───┬───┬───┬───┐
 │   │ Ø │ A │ G │ C │ A │ T │
