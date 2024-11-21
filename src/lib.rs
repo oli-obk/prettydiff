@@ -18,3 +18,4 @@ pub mod text;
 
 pub use crate::basic::diff_slice;
 pub use crate::text::{diff_chars, diff_lines, diff_words};
+pub use owo_colors;
