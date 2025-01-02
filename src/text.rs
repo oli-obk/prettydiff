@@ -188,7 +188,7 @@ impl<'a> InlineChangeset<'a> {
     }
 }
 
-impl<'a> fmt::Display for InlineChangeset<'a> {
+impl fmt::Display for InlineChangeset<'_> {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "{}", self.format())
     }
@@ -585,7 +585,7 @@ impl<'a> LineChangeset<'a> {
     }
 }
 
-impl<'a> fmt::Display for LineChangeset<'a> {
+impl fmt::Display for LineChangeset<'_> {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "{}", self.format())
     }

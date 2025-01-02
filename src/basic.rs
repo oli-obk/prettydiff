@@ -52,7 +52,7 @@ pub struct SliceChangeset<'a, T> {
     pub diff: Vec<DiffOp<'a, T>>,
 }
 
-impl<'a, T: fmt::Display> SliceChangeset<'a, T> {
+impl<T: fmt::Display> SliceChangeset<'_, T> {
     pub fn format(&self, skip_same: bool) -> String {
         let mut out: Vec<String> = Vec::with_capacity(self.diff.len());
         for op in &self.diff {
@@ -99,7 +99,7 @@ impl<'a, T: fmt::Display> SliceChangeset<'a, T> {
     }
 }
 
-impl<'a, T: fmt::Display> fmt::Display for SliceChangeset<'a, T> {
+impl<T: fmt::Display> fmt::Display for SliceChangeset<'_, T> {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "{}", self.format(true))
     }
