@@ -93,7 +93,7 @@ where
 
 #[cfg(feature = "prettytable-rs")]
 /// Prints pretty-table for LCS
-impl<'a, T> std::fmt::Display for Table<'a, T>
+impl<T> std::fmt::Display for Table<'_, T>
 where
     T: std::fmt::Display,
 {
@@ -128,7 +128,7 @@ struct TableIter<'a, T: 'a> {
     table: &'a Table<'a, T>,
 }
 
-impl<'a, T> Iterator for TableIter<'a, T> {
+impl<T> Iterator for TableIter<'_, T> {
     type Item = (usize, usize);
     fn next(&mut self) -> Option<Self::Item> {
         let table = &self.table.table;
@@ -158,7 +158,7 @@ pub struct Match<'a, T: 'a> {
     table: &'a Table<'a, T>,
 }
 
-impl<'a, T> Match<'a, T> {
+impl<T> Match<'_, T> {
     /// Returns matched sequence
     pub fn seq(&self) -> &[T] {
         &self.table.x[self.x..(self.x + self.len)]
