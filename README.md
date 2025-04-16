@@ -122,14 +122,3 @@ void func3(){}
 println!("diff_lines:");
 println!("{}", diff_lines(code1_a, code1_b));
 ```
-
-## App
-
-This crate also provides app for side-by-side diff:
-
-```sh
-cargo install prettydiff
-prettydiff left_file.txt right_file.txt
-```
-
-![App](https://raw.githubusercontent.com/romankoblov/prettydiff/master/screens/app.png)
