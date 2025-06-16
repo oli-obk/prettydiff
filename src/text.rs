@@ -12,8 +12,6 @@ use std::{
     fmt,
 };
 
-use pad::{Alignment, PadStr};
-
 pub struct StringSplitIter<'a, F>
 where
     F: Fn(char) -> bool,
@@ -441,11 +439,10 @@ impl<'a> LineChangeset<'a> {
             .iter()
             .map(|line| {
                 let res = if display_line_numbers {
-                    format!("{} ", *line_counter)
-                        .pad_to_width_with_alignment(prefix_size, Alignment::Right)
-                        + line
+                    // Pad and align the line number to the right
+                    format!("{:>size$} ", *line_counter, size = prefix_size - 1) + line
                 } else {
-                    "".pad_to_width(prefix_size) + line
+                    " ".repeat(prefix_size) + line
                 };
                 *line_counter += 1;
                 res
@@ -465,11 +462,11 @@ impl<'a> LineChangeset<'a> {
             .iter()
             .map(|line| {
                 let res = if display_line_numbers {
-                    format!("{} ", *line_counter)
-                        .pad_to_width_with_alignment(prefix_size, Alignment::Right)
+                    // Pad and align the line number to the right
+                    format!("{:>size$} ", *line_counter, size = prefix_size - 1)
                         + &self.remove_color(line)
                 } else {
-                    "".pad_to_width(prefix_size) + &self.remove_color(line)
+                    " ".repeat(prefix_size) + &self.remove_color(line)
                 };
                 *line_counter += 1;
                 res
@@ -482,7 +479,7 @@ impl<'a> LineChangeset<'a> {
     fn format_insert(&self, lines: &[&str], prefix_size: usize) -> String {
         lines
             .iter()
-            .map(|line| "".pad_to_width(prefix_size) + &self.insert_color(line))
+            .map(|line| " ".repeat(prefix_size) + &self.insert_color(line))
             .reduce(|acc, line| acc + "\n" + &line)
             .unwrap()
     }
