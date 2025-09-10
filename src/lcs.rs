@@ -41,14 +41,14 @@ where
         Table { x, y, table }
     }
 
-    fn seq_iter(&self) -> TableIter<T> {
+    fn seq_iter(&self) -> TableIter<'_, T> {
         TableIter {
             x: self.x.len(),
             y: self.y.len(),
             table: self,
         }
     }
-    fn get_match(&self, x: usize, y: usize, len: usize) -> Match<T> {
+    fn get_match(&self, x: usize, y: usize, len: usize) -> Match<'_, T> {
         Match {
             x,
             y,
@@ -58,7 +58,7 @@ where
     }
 
     /// Returns matches between X and Y
-    pub fn matches(&self) -> Vec<Match<T>> {
+    pub fn matches(&self) -> Vec<Match<'_, T>> {
         let mut matches: Vec<Match<T>> = Vec::new();
         for (x, y) in self.seq_iter() {
             if let Some(last) = matches.last_mut() {
@@ -76,7 +76,7 @@ where
     }
 
     /// Returns matches between X and Y with zero-len match at the end
-    pub fn matches_zero(&self) -> Vec<Match<T>> {
+    pub fn matches_zero(&self) -> Vec<Match<'_, T>> {
         let mut matches = self.matches();
         matches.push(self.get_match(self.x.len(), self.y.len(), 0));
         matches
