@@ -546,8 +546,7 @@ impl<'a> LineChangeset<'a> {
                     Some(ContextConfig {
                         context_size,
                         skipping_marker,
-                        remove_color,
-                        insert_color,
+                        ..
                     }) => {
                         let mut lines = a;
                         if !at_beginning {
