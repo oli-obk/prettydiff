@@ -213,6 +213,8 @@ fn color_multilines(color: AnsiColors, s: &str) -> String {
 pub struct ContextConfig<'a> {
     pub context_size: usize,
     pub skipping_marker: &'a str,
+    pub remove_color: Option<Style>,
+    pub insert_color: Option<Style>,
 }
 
 /// Container for line-by-line text diff result. Can be pretty-printed by Display trait.
@@ -414,12 +416,18 @@ impl<'a> LineChangeset<'a> {
         table.print(f)
     }
 
-    fn remove_color(&self, a: &str) -> String {
-        a.red().strikethrough().to_string()
+    fn remove_color(&self, a: &str, style: Option<Style>) -> String {
+        match style {
+            Some(sty) => a.style(sty).to_string(),
+            None => a.red().strikethrough().to_string(),
+        }
     }
 
-    fn insert_color(&self, a: &str) -> String {
-        a.green().to_string()
+    fn insert_color(&self, a: &str, style: Option<Style>) -> String {
+        match style {
+            Some(sty) => a.style(sty).to_string(),
+            None => a.green().to_string(),
+        }
     }
 
     /// Returns formatted string with colors
@@ -457,6 +465,7 @@ impl<'a> LineChangeset<'a> {
         display_line_numbers: bool,
         prefix_size: usize,
         line_counter: &mut usize,
+        remove_style: Option<Style>,
     ) -> String {
         lines
             .iter()
@@ -464,9 +473,9 @@ impl<'a> LineChangeset<'a> {
                 let res = if display_line_numbers {
                     // Pad and align the line number to the right
                     format!("{:>size$} ", *line_counter, size = prefix_size - 1)
-                        + &self.remove_color(line)
+                        + &self.remove_color(line, remove_style)
                 } else {
-                    " ".repeat(prefix_size) + &self.remove_color(line)
+                    " ".repeat(prefix_size) + &self.remove_color(line, remove_style)
                 };
                 *line_counter += 1;
                 res
@@ -476,10 +485,15 @@ impl<'a> LineChangeset<'a> {
     }
 
     /// Formats lines in DiffOp::Insert
-    fn format_insert(&self, lines: &[&str], prefix_size: usize) -> String {
+    fn format_insert(
+        &self,
+        lines: &[&str],
+        prefix_size: usize,
+        insert_style: Option<Style>,
+    ) -> String {
         lines
             .iter()
-            .map(|line| " ".repeat(prefix_size) + &self.insert_color(line))
+            .map(|line| " ".repeat(prefix_size) + &self.insert_color(line, insert_style))
             .reduce(|acc, line| acc + "\n" + &line)
             .unwrap()
     }
@@ -506,6 +520,18 @@ impl<'a> LineChangeset<'a> {
         } else {
             0
         };
+        let remove_color = if let Some(ContextConfig { remove_color, .. }) = context_config {
+            remove_color
+        } else {
+            None
+        };
+
+        let insert_color = if let Some(ContextConfig { insert_color, .. }) = context_config {
+            insert_color
+        } else {
+            None
+        };
+
         let prefix_size = max(line_number_size, skipping_marker_size) + 1;
 
         let mut next_line = 1;
@@ -520,6 +546,8 @@ impl<'a> LineChangeset<'a> {
                     Some(ContextConfig {
                         context_size,
                         skipping_marker,
+                        remove_color,
+                        insert_color,
                     }) => {
                         let mut lines = a;
                         if !at_beginning {
@@ -559,12 +587,15 @@ impl<'a> LineChangeset<'a> {
                         }
                     }
                 },
-                basic::DiffOp::Insert(a) => out.push(self.format_insert(a, prefix_size)),
+                basic::DiffOp::Insert(a) => {
+                    out.push(self.format_insert(a, prefix_size, insert_color))
+                }
                 basic::DiffOp::Remove(a) => out.push(self.format_remove(
                     a,
                     display_line_numbers,
                     prefix_size,
                     &mut next_line,
+                    remove_color,
                 )),
                 basic::DiffOp::Replace(a, b) => {
                     out.push(self.format_remove(
@@ -572,8 +603,9 @@ impl<'a> LineChangeset<'a> {
                         display_line_numbers,
                         prefix_size,
                         &mut next_line,
+                        remove_color,
                     ));
-                    out.push(self.format_insert(b, prefix_size));
+                    out.push(self.format_insert(b, prefix_size, insert_color));
                 }
             }
             at_beginning = false;
@@ -869,6 +901,8 @@ fn test_format_with_context() {
     let context = |n| ContextConfig {
         context_size: n,
         skipping_marker: "...",
+        remove_color: None,
+        insert_color: None,
     };
     println!(
         "diff_lines:\n{}\n{:?}",
