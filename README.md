@@ -122,3 +122,45 @@ void func3(){}
 println!("diff_lines:");
 println!("{}", diff_lines(code1_a, code1_b));
 ```
+#### Diff Lines with Custom Config
+
+![diff_lines](screens/diff_lines_format-color.png)
+
+```rust
+use prettydiff::{diff_lines, text:ContextConfig};
+use owo_colors::Style;
+
+let context = ContextConfig {
+        context_size: 2,
+        skipping_marker: "...",
+        remove_color: Style::new().red().underline(),
+        insert_color: Style::new().purple().bold(),
+    };
+
+let code1_a = r#"
+void func1() {
+    x += 1
+}
+
+void func2() {
+    x += 2
+}
+    "#;
+let code1_b = r#"
+void func1(a: u32) {
+    x += 1
+}
+
+void functhreehalves() {
+    x += 1.5
+}
+
+void func2() {
+    x += 2
+}
+
+void func3(){}
+"#;
+println!("diff_lines:");
+println!("{}", diff_lines(code1_a, code1_b).format_with_context(Some(context), true));
+```
