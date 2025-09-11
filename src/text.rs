@@ -427,11 +427,7 @@ impl<'a> LineChangeset<'a> {
         table.print(f)
     }
 
-    fn remove_color(&self, a: &str, style: Style) -> String {
-        a.style(style).to_string()
-    }
-
-    fn insert_color(&self, a: &str, style: Style) -> String {
+    fn apply_style(&self, a: &str, style: Style) -> String {
         a.style(style).to_string()
     }
 
@@ -478,9 +474,9 @@ impl<'a> LineChangeset<'a> {
                 let res = if display_line_numbers {
                     // Pad and align the line number to the right
                     format!("{:>size$} ", *line_counter, size = prefix_size - 1)
-                        + &self.remove_color(line, remove_style)
+                        + &self.apply_style(line, remove_style)
                 } else {
-                    " ".repeat(prefix_size) + &self.remove_color(line, remove_style)
+                    " ".repeat(prefix_size) + &self.apply_style(line, remove_style)
                 };
                 *line_counter += 1;
                 res
@@ -493,7 +489,7 @@ impl<'a> LineChangeset<'a> {
     fn format_insert(&self, lines: &[&str], prefix_size: usize, insert_style: Style) -> String {
         lines
             .iter()
-            .map(|line| " ".repeat(prefix_size) + &self.insert_color(line, insert_style))
+            .map(|line| " ".repeat(prefix_size) + &self.apply_style(line, insert_style))
             .reduce(|acc, line| acc + "\n" + &line)
             .unwrap()
     }
